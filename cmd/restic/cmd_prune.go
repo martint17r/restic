@@ -260,6 +260,13 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
 		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
 
+	// delete obsolete index files (index files that have already been superseded)
+	obsoleteIndexes := (repo.Index()).(*repository.MasterIndex).Obsolete()
+	if len(obsoleteIndexes) != 0 {
+		Verbosef("deleting unused index files...\n")
+		DeleteFiles(gopts, repo, obsoleteIndexes, restic.IndexFile)
+	}
+
 	var obsoletePacks restic.IDSet
 	if len(rewritePacks) != 0 {
 		bar = newProgressMax(!gopts.Quiet, uint64(len(rewritePacks)), "packs rewritten")
