@@ -272,7 +272,7 @@ func formatBytes(c uint64) string {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+func (b *Backup) CompleteItem(item string, previous []*restic.Node, current *restic.Node, s archiver.ItemStats, d time.Duration) {
 	b.summary.Lock()
 	b.summary.ItemStats.Add(s)
 
@@ -309,6 +309,14 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 		}
 	}
 
+	inPrevious := false
+	for _, p := range previous {
+		if p.Equals(*current) {
+			inPrevious = true
+			break
+		}
+	}
+
 	if current.Type == "dir" {
 		if previous == nil {
 			b.VV("new       %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), formatBytes(s.DataSize), formatBytes(s.TreeSize))
@@ -318,7 +326,7 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 			return
 		}
 
-		if previous.Equals(*current) {
+		if inPrevious {
 			b.VV("unchanged %v", item)
 			b.summary.Lock()
 			b.summary.Dirs.Unchanged++
@@ -344,7 +352,7 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 			return
 		}
 
-		if previous.Equals(*current) {
+		if inPrevious {
 			b.VV("unchanged %v", item)
 			b.summary.Lock()
 			b.summary.Files.Unchanged++
