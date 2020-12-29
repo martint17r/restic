@@ -718,6 +718,7 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
 // SnapshotOptions collect attributes for a new snapshot.
 type SnapshotOptions struct {
 	Tags           restic.TagList
+	Paths          []string
 	Hostname       string
 	Excludes       []string
 	Time           time.Time
@@ -819,7 +820,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		return nil, restic.ID{}, err
 	}
 
-	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
+	sn, err := restic.NewSnapshot(opts.Paths, opts.Tags, opts.Hostname, opts.Time)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
