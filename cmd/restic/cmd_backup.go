@@ -603,11 +603,28 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
+	resume, extraPreviousTrees := getResume(targets, repo, opts.Force)
+	completeItem := func(item string, previous []*restic.Node, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+		resume.writeFinishedDir(item, current)
+		p.CompleteItem(item, previous, current, s, d)
+	}
+
 	if !gopts.JSON {
 		if len(parentSnapshotIDs) > 0 {
 			p.P("using parent snapshots %v\n", parentSnapshotIDs)
-		} else {
-			p.P("no parent snapshot found, will read all files\n")
+		}
+		if len(extraPreviousTrees) > 0 {
+			p.P("using resume data\n")
+		}
+		switch {
+		case opts.Force:
+			p.P("option --force is set, will read all files\n")
+		case len(parentSnapshotIDs) == 0 && len(extraPreviousTrees) == 0:
+			p.P("no parent snapshot or resume data found, will read all files\n")
+		}
+
+		if resume != nil {
+			p.VV("writing resume data to %v", resume.Name())
 		}
 	}
 
@@ -683,9 +700,10 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		success = false
 		return p.Error(item, fi, err)
 	}
-	arch.CompleteItem = p.CompleteItem
+	arch.CompleteItem = completeItem
 	arch.StartFile = p.StartFile
 	arch.CompleteBlob = p.CompleteBlob
+	arch.ExtraPreviousTrees = extraPreviousTrees
 
 	if opts.IgnoreInode {
 		// --ignore-inode implies --ignore-ctime: on FUSE, the ctime is not
@@ -723,6 +741,13 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	if !gopts.JSON {
 		p.P("snapshot %s saved\n", id.Str())
 	}
+
+	// clean up resume mechanism
+	resume.Done()
+	if !gopts.JSON && resume != nil {
+		p.VV("removed resume file %v after successful backup\n", resume.Name())
+	}
+
 	if !success {
 		return ErrInvalidSourceData
 	}
