@@ -93,7 +93,7 @@ func (idx *Index) Final() bool {
 
 const (
 	indexMaxBlobs = 50000
-	indexMaxAge   = 10 * time.Minute
+	indexMaxAge   = 5 * time.Minute
 )
 
 // IndexFull returns true iff the index is "full enough" to be saved as a preliminary index.
