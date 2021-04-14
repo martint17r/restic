@@ -307,10 +307,10 @@ All three arguments interpret the argument ``-`` as standard input.
 In all cases, paths may be absolute or relative to ``restic backup``'s
 working directory.
 
-Note that if you use restic in combination with include files, by default all
-entries of the include files are added to the snapshots paths. This may break
-the finding of parent snapshots. Please consider setting the paths manually
-using ``--set-path`` or ``--set-paths-from`` to reflect what is actually backuped.
+Note that if you use restic in combination with ``--files-from`` arguments, by default all
+entries from the files are added to the snapshot's "paths" field. This may break automatic
+finding of parent snapshots if the entries change between multiple runs of restic. Please consider setting the "paths" field manually
+using ``--set-path`` or ``--set-paths-from`` to reflect a consistent description of what is being backed up.
 
 For example, maybe you want to backup files which have a name that matches a
 certain regular expression pattern (uses GNU find):
