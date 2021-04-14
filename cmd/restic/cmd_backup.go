@@ -508,7 +508,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		opts.Paths = append(opts.Paths, fromfile...)
 	}
 
-	// set snapshot paths to targets if not given explicitely
+	// set snapshot paths to targets if not given explicitly
 	if len(opts.Paths) == 0 {
 		opts.Paths = targets
 	}
