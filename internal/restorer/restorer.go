@@ -2,6 +2,7 @@ package restorer
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -202,8 +203,8 @@ func (res *Restorer) restoreEmptyFileAt(node *restic.Node, target, location stri
 	return res.restoreNodeMetadataTo(node, target, location)
 }
 
-// RestoreTo creates the directories and files in the snapshot below dst.
-// Before an item is created, res.Filter is called.
+// NeededPacks returns the set of packs for the given snapshot.
+// It includes all packs for the included blobs and trees.
 func (res *Restorer) NeededPacks(ctx context.Context, dst string) (restic.IDSet, error) {
 	var err error
 	if !filepath.IsAbs(dst) {
@@ -215,6 +216,18 @@ func (res *Restorer) NeededPacks(ctx context.Context, dst string) (restic.IDSet,
 
 	index := res.repo.Index()
 	packs := restic.NewIDSet()
+
+	blobs := index.Lookup(restic.BlobHandle{ID: *res.sn.Tree, Type: restic.TreeBlob})
+	if len(blobs) == 0 {
+		return nil, fmt.Errorf("tree %s not found in index", res.sn.Tree)
+	}
+
+	for _, b := range blobs {
+		if b.ID.Equal(*res.sn.Tree) {
+			packs.Insert(b.PackID)
+			break
+		}
+	}
 
 	debug.Log("first pass for %q", dst)
 
