@@ -1,6 +1,9 @@
 package restic
 
-import "sort"
+import (
+	"encoding/json"
+	"sort"
+)
 
 // IDSet is a set of IDs.
 type IDSet map[ID]struct{}
@@ -108,4 +111,9 @@ func (s IDSet) String() string {
 	}
 
 	return "{" + str[1:len(str)-1] + "}"
+}
+
+// MarshalJSON returns a JSON array of all IDs in this set.
+func (s IDSet) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.List())
 }

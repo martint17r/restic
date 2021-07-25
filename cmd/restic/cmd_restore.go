@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"os"
 	"strings"
 
 	"github.com/restic/restic/internal/debug"
@@ -229,7 +231,29 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if opts.DryRun {
-		Printf("Would have restored from the packs:\n%v\n\n", packs)
+		if !gopts.JSON {
+			Printf("Would have restored from the packs:\n%v\n\n", packs)
+		} else {
+			sn := res.Snapshot()
+			return PrintJSONPackSet(sn, packs)
+		}
+	}
+
+	return nil
+}
+
+// PrintJSONPackSet generates a JSON structure for the given IDSet and prints it
+func PrintJSONPackSet(snapshot *restic.Snapshot, packs restic.IDSet) error {
+	p := struct {
+		Snapshot *restic.ID   `json:"snapshot"`
+		Packs    restic.IDSet `json:"packs"`
+	}{
+		Snapshot: snapshot.ID(),
+		Packs:    packs,
+	}
+	err := json.NewEncoder(os.Stdout).Encode(&p)
+	if err != nil {
+		return errors.Wrap(err, "failed to encode packs: %s")
 	}
 
 	return nil
